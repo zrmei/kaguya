@@ -13,6 +13,13 @@ option(KAGUYA_SINGLE_HEADER_VERSION "generate single header" OFF)
 include_directories(SYSTEM ${LUA_INCLUDE_DIRS})
 link_directories(${LUA_LIBRARY_DIRS})
 
+
+find_package(Boost)
+if(Boost_INCLUDE_DIR)
+include_directories(SYSTEM ${Boost_INCLUDE_DIR})
+endif(Boost_INCLUDE_DIR)
+
+
 if(KAGUYA_SINGLE_HEADER_VERSION)
 file(MAKE_DIRECTORY single_include/kaguya)
 file(COPY include/kaguya/another_binding_api.hpp DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/single_include/kaguya/)
@@ -55,9 +62,7 @@ if(KAGUYA_USE_SHARED_LUAREF)
   add_definitions("-DKAGUYA_USE_SHARED_LUAREF=1")
 endif()
 
-
 if(EMSCRIPTEN)
-  set(DISABLE_ADDRESS_SANITIZER On)
   include_directories(SYSTEM "${EMSCRIPTEN_ROOT_PATH}/system/lib/libcxxabi/include/")
   add_definitions("-std=c++11")
   set(CMAKE_EXECUTABLE_SUFFIX ".html")
@@ -95,32 +100,12 @@ if(KAGUYA_BUILD_EXAMPLES)
   add_subdirectory(examples)
 endif(KAGUYA_BUILD_EXAMPLES)
 
-enable_testing()
-if(COVERAGE)
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0 -Wall -Woverloaded-virtual -Wwrite-strings -fprofile-arcs -ftest-coverage -coverage -fno-inline -fno-inline-small-functions -fno-default-inline")
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0 -Wall -fprofile-arcs -ftest-coverage -coverage -fno-inline -fno-inline-small-functions -fno-default-inline")
-SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fprofile-arcs -ftest-coverage -coverage -fno-inline -fno-inline-small-functions -fno-default-inline")
-endif(COVERAGE)
-
-file(GLOB TEST_SRCS files RELATIVE ${CMAKE_SOURCE_DIR} test/test_*.cpp)
-
-add_executable(test_runner ${TEST_SRCS}  ${KAGUYA_HEADER})
-target_link_libraries(test_runner ${LUA_LIBRARIES})
-if(HAVE_FLAG_SANITIZE_ADDRESS)
-SET_TARGET_PROPERTIES(test_runner PROPERTIES COMPILE_FLAGS "-fsanitize=address -fno-omit-frame-pointer")
-SET_TARGET_PROPERTIES(test_runner PROPERTIES LINK_FLAGS "-fsanitize=address")
-endif(HAVE_FLAG_SANITIZE_ADDRESS)
-
-
 if(EMSCRIPTEN)
 if(KAGUYA_BUILD_BENCHMARK)
   SET_TARGET_PROPERTIES(benchmark PROPERTIES LINK_FLAGS "-s DEMANGLE_SUPPORT=1 -s TOTAL_MEMORY=36777216")
 endif(KAGUYA_BUILD_BENCHMARK)
-  SET_TARGET_PROPERTIES(test_runner PROPERTIES LINK_FLAGS "-s DEMANGLE_SUPPORT=1 -s TOTAL_MEMORY=36777216 -s DISABLE_EXCEPTION_CATCHING=0 --preload-file ${CMAKE_SOURCE_DIR}/test/lua@/lua")
 endif(EMSCRIPTEN)
 
 
-add_test(
-  NAME test_runner
-  COMMAND $<TARGET_FILE:test_runner>
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/test)
+enable_testing()
+add_subdirectory(test)
