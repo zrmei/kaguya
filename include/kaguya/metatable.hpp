@@ -296,7 +296,7 @@ public:
 
     if (!traits::is_same<base_class_type, void>::value ||
         !property_map_.empty()) // if base class has property and derived class
-                                // hasnt property. need property access
+                                // doesn't, need property access
                                 // metamethod
     {
       if (member_map_.count("__index") == 0) {
